@@ -23,6 +23,8 @@ def main():
 
     app.run_server(debug=True)
 
+    print('added for testing')
+
 
 if __name__ == '__main__':
     main()
