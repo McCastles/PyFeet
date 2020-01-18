@@ -135,7 +135,6 @@ class DashDBmanager:
         query = f'REPLACE INTO {self.table_name}  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         self.connection.execute(query, row_list)
         self.connection.commit()
-        print(f'Row inserted with id = {row_list[0]}')
 
     @staticmethod
     def parseJSON(json_data, verbose=False):

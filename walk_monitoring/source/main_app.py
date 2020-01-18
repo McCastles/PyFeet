@@ -163,7 +163,7 @@ def main():
                 style={'font-family': "Courier New, monospace", 'color': 'white'}),
         *[html.Button(f'patient id {i}', id=f'button{i}',
                       style={'color': 'black', 'background-color': 'white', 'border-radius': 15, 'blur-radius': 50,
-                             'margin-left': 20, 'font-size': 20, 'font-family': "Courier New, monospace"}) for i in
+                             'margin-left': 20, 'fontSize': 20, 'font-family': "Courier New, monospace"}) for i in
           range(1, 7)],
         html.Div(id='content', children=''),
         dcc.Interval(
