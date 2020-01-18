@@ -9,6 +9,7 @@ import numpy as np
 import requests
 from dash.dependencies import Input, Output, State
 from flask_caching import Cache
+import uuid
 
 from DashDBmanager import DashDBmanager
 
@@ -20,15 +21,17 @@ left_trace_range = range(3)
 right_trace_range = range(3, 6)
 
 db_path = '../../walktraceDB.db'
-db_instance = DashDBmanager(db_path)
 
 
+# db_instance = DashDBmanager(db_path)
+
+db_managers = {}
 
 def prepare_array(series, value):
     if len(series) < x_range:
         arr = np.zeros(x_range)
         np.put(arr, np.arange(len(series)), series)
-        series = arr# .tolist()
+        series = arr  # .tolist()
     else:
         series = series[1:]
         series.append(value)
@@ -54,12 +57,9 @@ def create_figure(traces, current_range, title):
 
 
 def build_data_storage_dict():
-
-    
-
     store = {
         'user_id': 1,
-        'db_manager': db_instance
+        'uuid': None
     }
 
     for i in range(n_traces):
@@ -70,7 +70,6 @@ def build_data_storage_dict():
 
 def main():
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
 
     app.layout = html.Div(children=[
         html.H4(id='header', children='Nasz Header'),
@@ -104,7 +103,6 @@ def main():
         )
     ])
 
-
     @app.callback(
         [Output('content', 'children'),
          Output('current_user_id_output', 'data'),
@@ -117,8 +115,15 @@ def main():
         [State('current_user_id_input', 'data')]
     )
     def tick(_, t1, t2, t3, t4, t5, t6, data):
+        if not data['uuid']:
+            uid = str(uuid.uuid4())
+            while uid in db_managers:
+                uid = str(uuid.uuid4())
+            data['uuid'] = uid
+            db_managers[uid] = DashDBmanager(db_path)
+        db_manager = db_managers[data['uuid']]
 
-        
+        print(db_manager)
 
         buttons_times = [t1, t2, t3, t4, t5, t6]
         for i, time in enumerate(buttons_times):
@@ -138,19 +143,12 @@ def main():
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
         sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]
-
-        
         # Doesn't work :(
-        
-        print(data)
-        db_manager = data['db_manager']
-        print(db_manager)
+
 
         # database.insert_row( DashDBmanager.parseJSON(json_data) )
-        
+
         # print('\n', database, '\n')
-        
-        
 
         for i in range(n_traces):
             series = prepare_array(data[f'trace{i}'], sensors[i]['value'])
@@ -165,8 +163,6 @@ def main():
             html.P(f"{json_data['firstname']} {json_data['lastname']}"),
             *sensor_paragraphs
         ]), data, html.H1(str(changed)), fig_left, fig_right
-
-
 
     @app.callback(
         Output('current_user_id_input', 'data'),
