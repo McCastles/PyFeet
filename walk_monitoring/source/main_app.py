@@ -1,14 +1,6 @@
-import json
-import os
-import time
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import numpy as np
-import requests
-from dash.dependencies import Input, Output, State
-from flask_caching import Cache
 import uuid
 from DashDBmanager import DashDBmanager
 import dash_bootstrap_components as dbc
@@ -28,11 +20,9 @@ left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
 
-ticklabels = True
+ticklabels = False
 
 db_path = '../../walktraceDB.db'
-
-# db_instance = DashDBmanager(db_path)
 
 db_managers = {}
 
@@ -41,7 +31,7 @@ def prepare_array(series, value):
     if len(series) < x_range:
         arr = np.zeros(x_range)
         np.put(arr, np.arange(len(series)), series)
-        series = arr  # .tolist()
+        series = arr
     else:
         series = series[1:]
         series.append(value)
@@ -55,14 +45,32 @@ def create_figure_for_trace(traces, current_range, title):
             'x': xticks,
             'y': series,
             'name': f'sensor{list(current_range)[i] + 1}',
-            'text': f'sensor{list(current_range)[i] + 1}'
+            'text': f'sensor{list(current_range)[i] + 1}',
+            'font-family': "Courier New, monospace",
+            'font-color': 'white'
         } for i, series in enumerate(traces)],
         'layout': {
-            'title': title,
+            'title': {'text': title,
+                      'font': dict(
+                          family="Courier New, monospace",
+                          size=30,
+                          color="#EAEAEA"
+                      ),
+                      },
+
             'yaxis': {
-                'title': 'sensor value'
+                'title': {'text': 'sensor value', 'font-family': "Courier New, monospace", 'fontsize': 20},
+                'color': 'white',
+                'gridcolor': '#808080',
+                'tick0': 0,
+                'dtick': 200
             },
-            'height': 300
+            'xaxis': {'color': 'white'},
+            'height': 300,
+            'color': 'black',
+            'plot_bgcolor': 'black',
+            'paper_bgcolor': 'black',
+            'font': {'family': 'Courier New, monospace', 'color': 'white', 'size': 15}
         }
     }
 
@@ -79,7 +87,11 @@ def get_color(value, anomaly):
 def create_figure_for_feet(sensors_data):
     sensor_values = [s['value'] for s in sensors_data]
     colors = [get_color(s['value'], s['anomaly']) for s in sensors_data]
-
+    sensor_font = dict(
+        family="Courier New, monospace",
+        size=20,
+        color="#7f7f7f"
+    )
     fig = go.Figure(
         layout=go.Layout(images=[{
             'source': f'data:image/png;base64, {feet_img.decode()}',
@@ -91,30 +103,43 @@ def create_figure_for_feet(sensors_data):
             'sizey': 1,
             'sizing': 'stretch',
             'layer': 'below',
-
         }
         ],
             xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': ticklabels, 'range': [0, 1]},
             yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': ticklabels, 'range': [0, 1]},
             height=600,
-            width=600
+            width=600,
+            plot_bgcolor='black',
+            paper_bgcolor='black',
+            title={
+                'text': "sensor values visualization",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': dict(
+                    family="Courier New, monospace",
+                    size=30,
+                    color="#7f7f7f"
+                )
+            },
 
         ))
     fig.add_annotation(
-        go.layout.Annotation(x=0.36, y=0.7, text='sensor 1', arrowhead=7, ax=45, ay=0, arrowcolor="grey"))
+        go.layout.Annotation(x=0.36, y=0.7, text='S1', arrowhead=7, ax=45, ay=0, arrowcolor="grey", font=sensor_font))
     fig.add_annotation(
-        go.layout.Annotation(x=0.22, y=0.6, text='sensor 2', arrowhead=7, ax=45, ay=40, arrowcolor="grey"))
+        go.layout.Annotation(x=0.22, y=0.6, text='S2', arrowhead=7, ax=45, ay=40, arrowcolor="grey", font=sensor_font))
     fig.add_annotation(
-        go.layout.Annotation(x=0.24, y=0.2, text='sensor 3', arrowhead=7, ax=-45, ay=0, arrowcolor="grey"))
+        go.layout.Annotation(x=0.24, y=0.2, text='S3', arrowhead=7, ax=-45, ay=0, arrowcolor="grey", font=sensor_font))
     fig.add_annotation(
-        go.layout.Annotation(x=0.65, y=0.7, text='sensor 4', arrowhead=7, ax=-45, ay=20, arrowcolor="grey"))
+        go.layout.Annotation(x=0.65, y=0.7, text='S4', arrowhead=7, ax=-45, ay=20, arrowcolor="grey", font=sensor_font))
     fig.add_annotation(
-        go.layout.Annotation(x=0.83, y=0.6, text='sensor 5', arrowhead=7, ax=-75, ay=40, arrowcolor="grey"))
+        go.layout.Annotation(x=0.83, y=0.6, text='S5', arrowhead=7, ax=-75, ay=40, arrowcolor="grey", font=sensor_font))
     fig.add_annotation(
-        go.layout.Annotation(x=0.74, y=0.2, text='sensor 6', arrowhead=7, ax=65, ay=0, arrowcolor="grey"))
+        go.layout.Annotation(x=0.74, y=0.2, text='S6', arrowhead=7, ax=65, ay=0, arrowcolor="grey", font=sensor_font))
     fig.add_trace(go.Scatter(x=[0.3, 0.16, 0.3, 0.7, 0.86, 0.7], y=[0.7, 0.6, 0.2, 0.7, 0.6, 0.2], mode='markers+text',
-                             marker={'size': 36, 'color': colors}, text=sensor_values,
-                             textfont={'color': 'white', 'size': 18}))
+                             marker={'size': 43, 'color': colors}, text=sensor_values,
+                             textfont={'color': 'white', 'size': 18, 'family': "Courier New, monospace"}))
     return fig
 
 
@@ -134,9 +159,12 @@ def main():
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
     app.layout = html.Div(children=[
-        html.H4(id='header', children='Nasz Header'),
-        html.Div(id='changed', children=''),
-        *[html.Button(f'Id {i}', id=f'button{i}') for i in range(1, 7)],
+        html.H1(id='header', children='walk monitoring',
+                style={'font-family': "Courier New, monospace", 'color': 'white'}),
+        *[html.Button(f'patient id {i}', id=f'button{i}',
+                      style={'color': 'black', 'background-color': 'white', 'border-radius': 15, 'blur-radius': 50,
+                             'margin-left': 20, 'font-size': 20, 'font-family': "Courier New, monospace"}) for i in
+          range(1, 7)],
         html.Div(id='content', children=''),
         dcc.Interval(
             id='clock',
@@ -150,35 +178,27 @@ def main():
                 dbc.Col(
                     [dcc.Graph(
                         id='trace_left',
-                        figure={
-                            'data': [{
-                                'x': np.arange(x_range),
-                                'name': 'Trace'
-                            }]
-                        }
+                        figure=create_figure_for_trace([], left_trace_range,
+                                                       'Left foot sensors trace'),
+                        style={'background-color': 'black'}
+
                     ),
                         dcc.Graph(
                             id='trace_right',
-                            figure={
-                                'data': [{
-                                    'x': np.arange(x_range),
-                                    'name': 'Trace'
-                                }]
-                            }
+                            figure=create_figure_for_trace([], right_trace_range,
+                                                           'Right foot sensors trace')
                         )
                     ], width=9),
                 dbc.Col(
                     dcc.Graph(
                         id='feet',
-                        # figure=create_figure_for_feet()
-                    ), width=3)
-            ])
-    ])
+                    ), width=3, style={'background-color': 'black'})
+            ], style={'background-color': 'black'})
+    ], style={'background-color': 'black'})
 
     @app.callback(
         [Output('content', 'children'),
          Output('current_patient_id_output', 'data'),
-         Output('changed', 'children'),
          Output('trace_left', 'figure'),
          Output('trace_right', 'figure'),
          Output('feet', 'figure')],
@@ -196,10 +216,6 @@ def main():
             data['uuid'] = uid
             db_managers[uid] = DashDBmanager(db_path)
         db_manager = db_managers[data['uuid']]
-
-        print(db_manager)
-        
- 
 
         buttons_times = [t1, t2, t3, t4, t5, t6]
         for i, time in enumerate(buttons_times):
@@ -219,30 +235,21 @@ def main():
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
         sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]
-        
-
-
-        row = DashDBmanager.parseJSON(json_data)
-  
-        db_manager.insert_row(row)
-        
-        db_manager.select_all()
-
 
         for i in range(n_traces):
             series = prepare_array(data[f'trace{i}'], sensors[i]['value'])
             data[f'trace{i}'] = series
         fig_left = create_figure_for_trace([data[f'trace{i}'] for i in left_trace_range], left_trace_range,
-                                           'Left Foot Sensors Trace')
+                                           'left foot sensors trace')
         fig_right = create_figure_for_trace([data[f'trace{i}'] for i in right_trace_range], right_trace_range,
-                                            'Right Foot Sensors Trace')
+                                            'right foot sensors trace')
         fig_feet = create_figure_for_feet(sensors)
 
         return html.Div([
-            html.H1('Name:'),
-            html.P(f"{json_data['firstname']} {json_data['lastname']}"),
-            *sensor_paragraphs
-        ]), data, html.H1(str(changed)), fig_left, fig_right, fig_feet
+            html.H2(f'patient name: {json_data["firstname"]} {json_data["lastname"]}',
+                    style={'font-family': "Courier New, monospace"}),
+        ], style={'background-color': 'grey', 'width': 1000, 'padding': 20, 'border-radius': 15, 'blur-radius': 50,
+                  'margin-left': 20, 'margin-top': 20, 'margin-bottom': 20}), data, fig_left, fig_right, fig_feet
 
     @app.callback(
         Output('current_patient_id_input', 'data'),
