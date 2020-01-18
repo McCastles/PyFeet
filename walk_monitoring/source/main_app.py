@@ -234,7 +234,9 @@ def main():
         url = f'http://127.0.0.1:5000/{patient_id}'
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
-        sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]
+
+        row_list = db_manager.parseJSON(json_data)
+        db_manager.insert_row(row_list)
 
         for i in range(n_traces):
             series = prepare_array(data[f'trace{i}'], sensors[i]['value'])

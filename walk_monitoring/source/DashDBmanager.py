@@ -1,15 +1,14 @@
-
 import datetime
 import random
 import os
 import sqlite3
 from sqlite3 import Error
 
+
 class DashDBmanager:
 
     def __init__(self, db_path='./walktraceDB.db'):
 
-        
         self.table_name = f'STEPS'
         self.columns = f'''
         ID, DATE, USERNAME, DESC, 
@@ -20,14 +19,14 @@ class DashDBmanager:
         '''
 
         existed = os.path.isfile(db_path)
-        
-        self.connection = sqlite3.connect(db_path)
+
+        self.connection = sqlite3.connect(db_path, check_same_thread=False)
         print(f'Trying to connect to {db_path}...')
 
         if existed:
-            
+
             print(f'Database {db_path} is not empty.')
-        
+
         else:
 
             print(f'Database {db_path} not found, creating new...')
@@ -68,10 +67,8 @@ class DashDBmanager:
 
             self.connection.execute(query)
             print('Database created successfully.\n')
-        
+
         print(f'Database connection successfully.\n')
-
-
 
     def select_row(self, row_id, verbose=True):
 
@@ -84,9 +81,9 @@ class DashDBmanager:
 
         WHERE ID = {row_id};
         '''
-       
+
         cursor = self.connection.execute(query)
-        
+
         qty = 0
         for row in cursor:
             qty += 1
@@ -94,11 +91,8 @@ class DashDBmanager:
                 print(row)
         print(f'{qty} row(s) selected successfully.')
 
-
-
     def select_all(self):
         print(f'\nSelecting all rows...')
-
 
         cursor = self.connection.execute(f'''
         
@@ -106,19 +100,16 @@ class DashDBmanager:
         
         ''')
         qty = 0
-    
+
         for row in cursor:
             qty += 1
             print(row)
         print(f'{qty} row(s) selected successfully.')
-    
-
-
 
     def select_area(self, id_anomaly, margin=3, verbose=False):
 
         print(f'\nFetching row: id = {id_anomaly} +- {margin}')
-            
+
         query = f'''
 
         SELECT 
@@ -127,7 +118,7 @@ class DashDBmanager:
             
             from {self.table_name}
 
-            WHERE ID BETWEEN {id_anomaly-margin} AND {id_anomaly+margin}
+            WHERE ID BETWEEN {id_anomaly - margin} AND {id_anomaly + margin}
 
         '''
 
@@ -140,38 +131,20 @@ class DashDBmanager:
         print('Fetching successfully.')
         return cursor
 
-
-
     def insert_row(self, row_list, verbose=False):
-
-        value_str = ",\n\t\t".join(row_list)
-
-        query = f'''
-        REPLACE INTO {self.table_name} (
-            {self.columns}
-        )
-        VALUES (
-                {value_str}
-        )
-        '''
-        
-        if verbose:
-            print(query)
-
-        self.connection.execute(query)
+        query = f'REPLACE INTO {self.table_name}  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        self.connection.execute(query, row_list)
         self.connection.commit()
         print(f'Row inserted with id = {row_list[0]}')
 
-
-
     @staticmethod
     def parseJSON(json_data, verbose=False):
-        
+
         trace = json_data['trace']
         row_list = []
 
         # ID
-        row_list.append(str(trace['id'])) #.zfill(14))
+        row_list.append(str(trace['id']))  # .zfill(14))
 
         # DATE
         dt = datetime.datetime.strptime(str(trace['id']), '%H%M%S%d%m%Y')
@@ -180,33 +153,26 @@ class DashDBmanager:
 
         # USERNAME
         row_list.append(f"'{json_data['firstname']} {json_data['lastname']}'")
-        
 
         # DESC
         row_list.append(f"'{trace['name']}'")
-
 
         # S1_VALUE, S1_ANOMALY ... S6_VALUE, S6_ANOMALY
         for sensor in trace['sensors']:
             row_list.append(str(sensor['value']))
             row_list.append(str(sensor['anomaly']))
 
-
         # IS_ANOMALY
         is_anomaly = any([sensor['anomaly'] for sensor in trace['sensors']])
         row_list.append(str(is_anomaly))
 
         if verbose:
-            print(row_list,'\n')
-        
+            print(row_list, '\n')
+
         return row_list
 
 
-
-
-
 if __name__ == "__main__":
-
     db_name = './test_class.db'
 
     # Deleting old database
@@ -216,25 +182,24 @@ if __name__ == "__main__":
     db = DashDBmanager(db_name)
 
     json_data = {
-        'birthdate': '1982', 
-        'disabled': False, 
-        'firstname': 'Janek', 
-        'id': 12, 
-        'lastname': 'Grzegorczyk', 
+        'birthdate': '1982',
+        'disabled': False,
+        'firstname': 'Janek',
+        'id': 12,
+        'lastname': 'Grzegorczyk',
         'trace': {
-            'id': 11111111111121, 
-            'name': 'bach', 
+            'id': 11111111111121,
+            'name': 'bach',
             'sensors': [
-                {'anomaly': False, 'id': 0, 'value': 710}, 
-                {'anomaly': False, 'id': 1, 'value': 148}, 
-                {'anomaly': False, 'id': 2, 'value': 1023}, 
-                {'anomaly': False, 'id': 3, 'value': 1023}, 
-                {'anomaly': False, 'id': 4, 'value': 245}, 
+                {'anomaly': False, 'id': 0, 'value': 710},
+                {'anomaly': False, 'id': 1, 'value': 148},
+                {'anomaly': False, 'id': 2, 'value': 1023},
+                {'anomaly': False, 'id': 3, 'value': 1023},
+                {'anomaly': False, 'id': 4, 'value': 245},
                 {'anomaly': False, 'id': 5, 'value': 1023}
             ]
         }
-    } 
-
+    }
 
     # JSON parsing
     row_list = DashDBmanager.parseJSON(json_data)
