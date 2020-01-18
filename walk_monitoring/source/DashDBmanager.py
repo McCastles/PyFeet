@@ -87,18 +87,19 @@ class DashDBmanager:
 
         cursor = self.connection.execute(query)
         
+        qty = 0
         if verbose:
             for row in cursor:
+                qty += 1
                 print(row)
-        print(f'Row(s) selected successfully.')
+        print(f'{qty} row(s) selected successfully.')
 
 
 
-    def __repr__(self):
-        print(f'\nSelecting all rows...')
-        self.select_row(verbose=True)
-        return ''
-
+    # def __repr__(self):
+    #     print(f'\nSelecting all rows...')
+    #     self.select_row(verbose=True)
+    #     return f'{self}'
 
 
     def select_area(self, id_anomaly, margin=3, verbose=False):
@@ -188,7 +189,6 @@ class DashDBmanager:
     
 
 
-
 if __name__ == "__main__":
 
     db_name = './test_class.db'
@@ -225,6 +225,7 @@ if __name__ == "__main__":
     db.insert_row(row_list, verbose=True)
 
     # Test
+    # TODO select_all()
     print(db)
 
 '''

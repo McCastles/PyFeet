@@ -1,13 +1,16 @@
+import json
+import os
+import time
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
-import json
-import requests
 import numpy as np
-import time
-from DashDBmanager import DashDBmanager
+import requests
+from dash.dependencies import Input, Output, State
+from flask_caching import Cache
 
+from DashDBmanager import DashDBmanager
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 person_ids = [1, 2, 3, 4, 5, 6]
@@ -16,8 +19,8 @@ n_traces = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 
-db_name = '../../walktraceDB.db'
-database = DashDBmanager(db_name)
+db_path = '../../walktraceDB.db'
+db_instance = DashDBmanager(db_path)
 
 
 
@@ -51,14 +54,23 @@ def create_figure(traces, current_range, title):
 
 
 def build_data_storage_dict():
-    store = {'user_id': 1}
+
+    
+
+    store = {
+        'user_id': 1,
+        'db_manager': db_instance
+    }
+
     for i in range(n_traces):
         store[f'trace{i}'] = []
+    print(store)
     return store
 
 
 def main():
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
 
     app.layout = html.Div(children=[
         html.H4(id='header', children='Nasz Header'),
@@ -92,6 +104,7 @@ def main():
         )
     ])
 
+
     @app.callback(
         [Output('content', 'children'),
          Output('current_user_id_output', 'data'),
@@ -102,9 +115,11 @@ def main():
          *[Input(f'button{i}', 'n_clicks_timestamp') for i in range(1, 7)],
          ],
         [State('current_user_id_input', 'data')]
-
     )
     def tick(_, t1, t2, t3, t4, t5, t6, data):
+
+        
+
         buttons_times = [t1, t2, t3, t4, t5, t6]
         for i, time in enumerate(buttons_times):
             buttons_times[i] = 0 if time is None else time
@@ -126,6 +141,11 @@ def main():
 
         
         # Doesn't work :(
+        
+        print(data)
+        db_manager = data['db_manager']
+        print(db_manager)
+
         # database.insert_row( DashDBmanager.parseJSON(json_data) )
         
         # print('\n', database, '\n')
@@ -145,6 +165,8 @@ def main():
             html.P(f"{json_data['firstname']} {json_data['lastname']}"),
             *sensor_paragraphs
         ]), data, html.H1(str(changed)), fig_left, fig_right
+
+
 
     @app.callback(
         Output('current_user_id_input', 'data'),
