@@ -6,6 +6,8 @@ import json
 import requests
 import numpy as np
 import time
+from DashDBmanager import DashDBmanager
+
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 person_ids = [1, 2, 3, 4, 5, 6]
@@ -13,6 +15,10 @@ x_range = 100
 n_traces = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
+
+db_name = '../../walktraceDB.db'
+database = DashDBmanager(db_name)
+
 
 
 def prepare_array(series, value):
@@ -117,6 +123,14 @@ def main():
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
         sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]
+
+        
+        # Doesn't work :(
+        # database.insert_row( DashDBmanager.parseJSON(json_data) )
+        
+        # print('\n', database, '\n')
+        
+        
 
         for i in range(n_traces):
             series = prepare_array(data[f'trace{i}'], sensors[i]['value'])
