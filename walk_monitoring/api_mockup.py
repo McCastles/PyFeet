@@ -27,7 +27,7 @@ def get_json_file(my_id):
 
 @app.route("/")
 def home():
-    return
+    return 'asd'
 
 
 @app.route("/1")
