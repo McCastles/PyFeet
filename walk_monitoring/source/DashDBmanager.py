@@ -1,4 +1,5 @@
 
+import datetime
 import random
 import os
 import sqlite3
@@ -66,39 +67,17 @@ class DashDBmanager:
             '''
 
             self.connection.execute(query)
-            print('Database created sycc.\n')
+            print('Database created successfully.\n')
         
-        print(f'Database connection sycc.\n')
+        print(f'Database connection successfully.\n')
 
 
-    # TODO: JSON unpacking?
-    def insert_row(self, trace_id):
 
-        query = f'''
-
-        INSERT  INTO {self.table_name} (
-            {self.columns}
-            )
-
-            VALUES (
-                {trace_id}, 12121212122012, 'jAS', 'po kanapke', 
-                {random.randint(1, 100)}, 'False', {random.randint(1, 100)}, 'False',
-                {random.randint(1, 100)}, 'False', {random.randint(1, 100)}, 'False',
-                {random.randint(1, 100)}, 'False', {random.randint(1, 100)}, 'False',
-                'False'
-            )
-        '''
-
-        self.connection.execute(query)
-        self.connection.commit()
-        print(f'Row inserted with id = {trace_id}')
 
 
 
     # TODO: WHERE
     def select_row(self, verbose=False):
-
-        print(f'\nSelecting all rows...')
 
         query = f'''
         SELECT 
@@ -111,8 +90,14 @@ class DashDBmanager:
         if verbose:
             for row in cursor:
                 print(row)
-        print(f'Row selected sycc.')
+        print(f'Row(s) selected successfully.')
 
+
+
+    def __repr__(self):
+        print(f'\nSelecting all rows...')
+        self.select_row(verbose=True)
+        return ''
 
 
 
@@ -138,8 +123,68 @@ class DashDBmanager:
             for row in cursor:
                 print(row)
 
-        print('Fetching sycc.')
+        print('Fetching successfully.')
         return cursor
+
+
+
+    def insert_row(self, row_list, verbose=False):
+
+        value_str = ",\n\t\t".join(row_list)
+        query = f'''
+        INSERT  INTO {self.table_name} (
+            {self.columns}
+            )
+        VALUES (
+                {value_str}
+        )
+        '''
+        
+        if verbose:
+            print(query)
+
+        self.connection.execute(query)
+        self.connection.commit()
+        print(f'Row inserted with id = {row_list[0]}')
+
+
+
+    @staticmethod
+    def parseJSON(json_data, verbose=False):
+        
+        trace = json_data['trace']
+        row_list = []
+
+        # ID
+        row_list.append(str(trace['id']).zfill(14))
+
+        # DATE
+        dt = datetime.datetime.strptime(str(trace['id']), '%H%M%S%d%m%Y')
+        dt = dt.strftime("%m/%d/%Y %H:%M:%S")
+        row_list.append(f"'{dt}'")
+
+        # USERNAME
+        row_list.append(f"'{json_data['firstname']} {json_data['lastname']}'")
+        
+
+        # DESC
+        row_list.append(f"'{trace['name']}'")
+
+
+        # S1_VALUE, S1_ANOMALY ... S6_VALUE, S6_ANOMALY
+        for sensor in trace['sensors']:
+            row_list.append(str(sensor['value']))
+            row_list.append(str(sensor['anomaly']))
+
+
+        # IS_ANOMALY
+        is_anomaly = any([sensor['anomaly'] for sensor in trace['sensors']])
+        row_list.append(str(is_anomaly))
+
+        if verbose:
+            print(row_list,'\n')
+        
+        return row_list
     
 
 
@@ -147,22 +192,50 @@ class DashDBmanager:
 if __name__ == "__main__":
 
     db_name = './test_class.db'
-    os.remove(db_name), print('\nDeleted db sycc.')
 
+    # Deleting old database
+    os.remove(db_name), print('\nDeleted db successfully.')
 
     # Creation
     db = DashDBmanager(db_name)
 
+    json_data = {
+        'birthdate': '1982', 
+        'disabled': False, 
+        'firstname': 'Janek', 
+        'id': 12, 
+        'lastname': 'Grzegorczyk', 
+        'trace': {
+            'id': 2572401012012, 
+            'name': 'bach', 
+            'sensors': [
+                {'anomaly': False, 'id': 0, 'value': 710}, 
+                {'anomaly': False, 'id': 1, 'value': 148}, 
+                {'anomaly': False, 'id': 2, 'value': 1023}, 
+                {'anomaly': False, 'id': 3, 'value': 1023}, 
+                {'anomaly': False, 'id': 4, 'value': 245}, 
+                {'anomaly': False, 'id': 5, 'value': 1023}
+            ]
+        }
+    } 
 
+
+    # JSON parsing
+    row_list = DashDBmanager.parseJSON(json_data, verbose=True)
+    db.insert_row(row_list, verbose=True)
+
+    # Test
+    print(db)
+
+'''
     # Insert dummy data
     for i in range(1, 11):
         db.insert_row(i)
 
 
-    # Test
-    db.select_row(verbose=True)
+    
     db.select_area(1, verbose=True)
     db.select_area(5, verbose=True)
     db.select_area(10, verbose=True)
 
-
+'''
