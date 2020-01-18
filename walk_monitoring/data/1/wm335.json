@@ -1,0 +1,43 @@
+{
+  "birthdate": "1982",
+  "disabled": false,
+  "firstname": "Janek",
+  "id": 12,
+  "lastname": "Grzegorczyk",
+  "trace": {
+    "id": 2471901012010,
+    "name": "bach",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 927
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 117
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 1023
+      }
+    ]
+  }
+}

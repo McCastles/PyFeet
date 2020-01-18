@@ -1,0 +1,43 @@
+{
+  "birthdate": "1981",
+  "disabled": false,
+  "firstname": "Bartosz",
+  "id": 12,
+  "lastname": "Moskalski",
+  "trace": {
+    "id": 4362130012010,
+    "name": "bartek gdy poszed\u0142 po kanapk\u0119",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 62
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 62
+      }
+    ]
+  }
+}
