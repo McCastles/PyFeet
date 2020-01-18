@@ -73,33 +73,46 @@ class DashDBmanager:
 
 
 
+    def select_row(self, row_id, verbose=True):
 
-
-
-    # TODO: WHERE
-    def select_row(self, verbose=False):
+        print(f'\nSelecting row with id = {row_id}')
 
         query = f'''
-        SELECT 
-            {self.columns}
-            from {self.table_name}
-        '''
+        SELECT *
+            
+        FROM {self.table_name}
 
+        WHERE ID = {row_id};
+        '''
+       
         cursor = self.connection.execute(query)
         
         qty = 0
-        if verbose:
-            for row in cursor:
-                qty += 1
+        for row in cursor:
+            qty += 1
+            if verbose:
                 print(row)
         print(f'{qty} row(s) selected successfully.')
 
 
 
-    # def __repr__(self):
-    #     print(f'\nSelecting all rows...')
-    #     self.select_row(verbose=True)
-    #     return f'{self}'
+    def select_all(self):
+        print(f'\nSelecting all rows...')
+
+
+        cursor = self.connection.execute(f'''
+        
+        select * from steps
+        
+        ''')
+        qty = 0
+    
+        for row in cursor:
+            qty += 1
+            print(row)
+        print(f'{qty} row(s) selected successfully.')
+    
+
 
 
     def select_area(self, id_anomaly, margin=3, verbose=False):
@@ -132,10 +145,11 @@ class DashDBmanager:
     def insert_row(self, row_list, verbose=False):
 
         value_str = ",\n\t\t".join(row_list)
+
         query = f'''
-        INSERT  INTO {self.table_name} (
+        REPLACE INTO {self.table_name} (
             {self.columns}
-            )
+        )
         VALUES (
                 {value_str}
         )
@@ -157,7 +171,7 @@ class DashDBmanager:
         row_list = []
 
         # ID
-        row_list.append(str(trace['id']).zfill(14))
+        row_list.append(str(trace['id'])) #.zfill(14))
 
         # DATE
         dt = datetime.datetime.strptime(str(trace['id']), '%H%M%S%d%m%Y')
@@ -186,7 +200,9 @@ class DashDBmanager:
             print(row_list,'\n')
         
         return row_list
-    
+
+
+
 
 
 if __name__ == "__main__":
@@ -194,7 +210,7 @@ if __name__ == "__main__":
     db_name = './test_class.db'
 
     # Deleting old database
-    os.remove(db_name), print('\nDeleted db successfully.')
+    # os.remove(db_name), print('\nDeleted db successfully.')
 
     # Creation
     db = DashDBmanager(db_name)
@@ -206,7 +222,7 @@ if __name__ == "__main__":
         'id': 12, 
         'lastname': 'Grzegorczyk', 
         'trace': {
-            'id': 2572401012012, 
+            'id': 11111111111121, 
             'name': 'bach', 
             'sensors': [
                 {'anomaly': False, 'id': 0, 'value': 710}, 
@@ -221,22 +237,10 @@ if __name__ == "__main__":
 
 
     # JSON parsing
-    row_list = DashDBmanager.parseJSON(json_data, verbose=True)
-    db.insert_row(row_list, verbose=True)
+    row_list = DashDBmanager.parseJSON(json_data)
+    db.insert_row(row_list)
 
     # Test
-    # TODO select_all()
-    print(db)
-
-'''
-    # Insert dummy data
-    for i in range(1, 11):
-        db.insert_row(i)
-
-
-    
-    db.select_area(1, verbose=True)
-    db.select_area(5, verbose=True)
-    db.select_area(10, verbose=True)
-
-'''
+    db.select_all()
+    db.select_row(row_id=11111111111111)
+    db.select_row(row_id=2572401012014)

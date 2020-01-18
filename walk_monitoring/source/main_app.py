@@ -124,6 +124,8 @@ def main():
         db_manager = db_managers[data['uuid']]
 
         print(db_manager)
+        
+ 
 
         buttons_times = [t1, t2, t3, t4, t5, t6]
         for i, time in enumerate(buttons_times):
@@ -143,12 +145,15 @@ def main():
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
         sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]
-        # Doesn't work :(
+        
 
 
-        # database.insert_row( DashDBmanager.parseJSON(json_data) )
+        row = DashDBmanager.parseJSON(json_data)
+  
+        db_manager.insert_row(row)
+        
+        db_manager.select_all()
 
-        # print('\n', database, '\n')
 
         for i in range(n_traces):
             series = prepare_array(data[f'trace{i}'], sensors[i]['value'])
