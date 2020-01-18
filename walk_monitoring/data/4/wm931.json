@@ -1,0 +1,43 @@
+{
+  "birthdate": "1998",
+  "disabled": true,
+  "firstname": "Ewelina",
+  "id": 12,
+  "lastname": "Nosowska",
+  "trace": {
+    "id": 17103324082019,
+    "name": "ewelinka",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 131
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 332
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 595
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 631
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 1023
+      }
+    ]
+  }
+}

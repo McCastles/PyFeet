@@ -1,0 +1,43 @@
+{
+  "birthdate": "1976",
+  "disabled": true,
+  "firstname": "El\u017cbieta",
+  "id": 12,
+  "lastname": "Kochalska",
+  "trace": {
+    "id": 14031105062019,
+    "name": "ela",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 10
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 791
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 7
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 7
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 8
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 8
+      }
+    ]
+  }
+}

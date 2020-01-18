@@ -112,7 +112,8 @@ def main():
             for i in range(n_traces):
                 data[f'trace{i}'] = []
 
-        url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{user_id}'
+        # url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{user_id}'
+        url = f'http://127.0.0.1:5000/{user_id}'
         json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
         sensor_paragraphs = [html.P(f'id: {s["id"]}, value: {s["value"]} anomaly: {s["anomaly"]}, ') for s in sensors]

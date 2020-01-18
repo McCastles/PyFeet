@@ -1,0 +1,43 @@
+{
+  "birthdate": "1985",
+  "disabled": false,
+  "firstname": "Piotr",
+  "id": 12,
+  "lastname": "Fokalski",
+  "trace": {
+    "id": 3293022012010,
+    "name": "piotrek - w czasie spaceru z psem",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 87
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 1023
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 498
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 195
+      }
+    ]
+  }
+}

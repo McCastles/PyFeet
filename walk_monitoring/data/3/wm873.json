@@ -1,0 +1,43 @@
+{
+  "birthdate": "1991",
+  "disabled": false,
+  "firstname": "Albert",
+  "id": 12,
+  "lastname": "Lisowski",
+  "trace": {
+    "id": 18252905072019,
+    "name": "alek",
+    "sensors": [
+      {
+        "anomaly": false,
+        "id": 0,
+        "value": 8
+      },
+      {
+        "anomaly": false,
+        "id": 1,
+        "value": 8
+      },
+      {
+        "anomaly": false,
+        "id": 2,
+        "value": 9
+      },
+      {
+        "anomaly": false,
+        "id": 3,
+        "value": 9
+      },
+      {
+        "anomaly": false,
+        "id": 4,
+        "value": 525
+      },
+      {
+        "anomaly": false,
+        "id": 5,
+        "value": 8
+      }
+    ]
+  }
+}
