@@ -14,7 +14,7 @@ import base64
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 
 person_ids = [1, 2, 3, 4, 5, 6]
-x_range = 100
+x_range = 600
 n_traces = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
@@ -65,9 +65,9 @@ def create_figure_for_trace(traces, current_range, title):
                 'tick0': 0,
                 'dtick': 200
             },
-            'xaxis': {'color': 'white'},
+            'xaxis': {'color': 'white', 'tickmode': 'array', 'tickvals': np.arange(0, 600, 100),
+                      'ticktext': np.arange(600, 0, -100)},
             'height': 300,
-            'color': 'black',
             'plot_bgcolor': 'black',
             'paper_bgcolor': 'black',
             'font': {'family': 'Courier New, monospace', 'color': 'white', 'size': 15}
