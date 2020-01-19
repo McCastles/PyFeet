@@ -1,0 +1,58 @@
+.patient-button {
+    color: black;
+    background-color: white;
+    border-radius: 15px;
+    blur-radius: 50px;
+    margin-left: 20px;
+    font-size: 15px;
+    font-family: Courier New, monospace;
+    padding: 8px;
+    box-shadow: 0px 0px 3px 0px #ffffff
+}
+
+.stop-button {
+    color: white;
+    background-color: #d12c08;
+    border-radius: 15px;
+    border-color: #d12c08;
+    blur-radius: 50px;
+    margin-left: 20px;
+    font-size: 15px;
+    font-family: Courier New, monospace;
+    padding: 8px;
+    box-shadow: 0px 0px 20px 0px #d12c08
+}
+
+.start-button {
+    color: white;
+    background-color: #098a26;
+    border-radius: 15px;
+    border-color: #098a26;
+    blur-radius: 50px;
+    margin-left: 20px;
+    font-size: 15px;
+    font-family: Courier New, monospace;
+    padding: 8px;
+    box-shadow: 0px 0px 20px 0px #098a26;
+}
+
+.patientName {
+    background-color: grey;
+    width: 1000px;
+    padding: 20px;
+    border-radius: 15px;
+    blur-radius: 50px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 10px;
+    box-shadow: 0px 0px 20px 0px #ffffff;
+}
+
+.mainDiv {
+    background-color: black;
+    height: 100vh;
+}
+
+.anomaliesDiv {
+    background-color: black;
+}

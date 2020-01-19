@@ -19,8 +19,8 @@ n_traces = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
-
-ticklabels = False
+tick_time = 500
+pause_time = 60 * 60 * 1000
 
 db_path = '../../walktraceDB.db'
 
@@ -46,21 +46,16 @@ def create_figure_for_trace(traces, current_range, title):
             'y': series,
             'name': f'sensor{list(current_range)[i] + 1}',
             'text': f'sensor{list(current_range)[i] + 1}',
-            'font-family': "Courier New, monospace",
-            'font-color': 'white'
         } for i, series in enumerate(traces)],
         'layout': {
             'title': {'text': title,
                       'font': dict(
-                          family="Courier New, monospace",
                           size=30,
-                          color="#EAEAEA"
                       ),
                       },
 
             'yaxis': {
-                'title': {'text': 'sensor value', 'font-family': "Courier New, monospace", 'fontsize': 20},
-                'color': 'white',
+                'title': {'text': 'sensor value', 'fontsize': 20},
                 'gridcolor': '#808080',
                 'tick0': 0,
                 'dtick': 200
@@ -88,9 +83,8 @@ def create_figure_for_feet(sensors_data):
     sensor_values = [s['value'] for s in sensors_data]
     colors = [get_color(s['value'], s['anomaly']) for s in sensors_data]
     sensor_font = dict(
-        family="Courier New, monospace",
         size=20,
-        color="#7f7f7f"
+        color="#d1c3c0"
     )
     fig = go.Figure(
         layout=go.Layout(images=[{
@@ -105,8 +99,8 @@ def create_figure_for_feet(sensors_data):
             'layer': 'below',
         }
         ],
-            xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': ticklabels, 'range': [0, 1]},
-            yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': ticklabels, 'range': [0, 1]},
+            xaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False, 'range': [0, 1]},
+            yaxis={'showgrid': False, 'zeroline': False, 'showticklabels': False, 'range': [0, 1]},
             height=600,
             width=600,
             plot_bgcolor='black',
@@ -139,7 +133,7 @@ def create_figure_for_feet(sensors_data):
         go.layout.Annotation(x=0.74, y=0.2, text='S6', arrowhead=7, ax=65, ay=0, arrowcolor="grey", font=sensor_font))
     fig.add_trace(go.Scatter(x=[0.3, 0.16, 0.3, 0.7, 0.86, 0.7], y=[0.7, 0.6, 0.2, 0.7, 0.6, 0.2], mode='markers+text',
                              marker={'size': 43, 'color': colors}, text=sensor_values,
-                             textfont={'color': 'white', 'size': 18, 'family': "Courier New, monospace"}))
+                             textfont={'color': 'white', 'size': 18}))
     return fig
 
 
@@ -159,18 +153,13 @@ def main():
     app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
     app.layout = html.Div(children=[
-        html.H1(id='header', children='walk monitoring',
-                style={'font-family': "Courier New, monospace", 'color': 'white'}),
-        *[html.Button(f'patient id {i}', id=f'button{i}',
-                      style={'color': 'black', 'background-color': 'white', 'border-radius': 15, 'blur-radius': 50,
-                             'margin-left': 20, 'fontSize': 20, 'font-family': "Courier New, monospace"}) for i in
-          range(1, 7)],
-        html.Div(id='content', children=''),
-        dcc.Interval(
-            id='clock',
-            interval=500,
-            n_intervals=0
-        ),
+        html.H1(id='header', children='walk monitoring'),
+        dbc.Row([dbc.Col(children=[html.Button(f'patient id {i}', id=f'button{i}',
+                                               className='patient-button') for i in range(1, 7)]),
+                 dbc.Col(html.Div(id='content', children=''))])
+        , html.Button('stop data streaming', id='stop', className='stop-button'),
+        html.Button('start data streaming', id='start', className='start-button'),
+        html.Div(id='clock_div', children=dcc.Interval(id='clock', interval=tick_time)),
         dcc.Store('current_patient_id_input', data=build_data_storage_dict()),
         dcc.Store('current_patient_id_output', data=build_data_storage_dict()),
         dbc.Row(
@@ -179,8 +168,7 @@ def main():
                     [dcc.Graph(
                         id='trace_left',
                         figure=create_figure_for_trace([], left_trace_range,
-                                                       'Left foot sensors trace'),
-                        style={'background-color': 'black'}
+                                                       'Left foot sensors trace')
 
                     ),
                         dcc.Graph(
@@ -192,9 +180,24 @@ def main():
                 dbc.Col(
                     dcc.Graph(
                         id='feet',
-                    ), width=3, style={'background-color': 'black'})
-            ], style={'background-color': 'black'})
-    ], style={'background-color': 'black'})
+                    ), width=3)
+            ])
+
+    ], className='mainDiv')
+
+    @app.callback(
+        [Output('clock_div', 'children')],
+        [Input('start', 'n_clicks_timestamp'),
+         Input('stop', 'n_clicks_timestamp')]
+    )
+    def define_stream_state(start_time, stop_time):
+        start_time = start_time or 1
+        stop_time = stop_time or 0
+        max_val = max([start_time, stop_time])
+        if start_time == max_val:
+            return [dcc.Interval(id='clock', interval=tick_time)]
+        else:
+            return [dcc.Interval(id='clock', interval=pause_time)]
 
     @app.callback(
         [Output('content', 'children'),
@@ -250,8 +253,7 @@ def main():
         return html.Div([
             html.H2(f'patient name: {json_data["firstname"]} {json_data["lastname"]}',
                     style={'font-family': "Courier New, monospace"}),
-        ], style={'background-color': 'grey', 'width': 1000, 'padding': 20, 'border-radius': 15, 'blur-radius': 50,
-                  'margin-left': 20, 'margin-top': 20, 'margin-bottom': 20}), data, fig_left, fig_right, fig_feet
+        ], className='patientName'), data, fig_left, fig_right, fig_feet
 
     @app.callback(
         Output('current_patient_id_input', 'data'),

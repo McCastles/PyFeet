@@ -68,7 +68,6 @@ class DashDBmanager:
             self.connection.execute(query)
             print('Database created successfully.\n')
 
-        print(f'Database connection successfully.\n')
 
     def select_row(self, row_id, verbose=True):
 
@@ -104,11 +103,9 @@ class DashDBmanager:
         for row in cursor:
             qty += 1
             print(row)
-        print(f'{qty} row(s) selected successfully.')
 
     def select_area(self, id_anomaly, margin=3, verbose=False):
 
-        print(f'\nFetching row: id = {id_anomaly} +- {margin}')
 
         query = f'''
 
