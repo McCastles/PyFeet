@@ -11,9 +11,11 @@
 }
 
 .stop-button {
-    color: white;
-    background-color: #d12c08;
+    color: black;
+    background-color: white;
+    width: 40px;
     border-radius: 15px;
+    border-width: 5px;
     border-color: #d12c08;
     blur-radius: 50px;
     margin-left: 20px;
@@ -24,9 +26,11 @@
 }
 
 .start-button {
-    color: white;
-    background-color: #098a26;
+    color: black;
+    background-color: white;
+    width: 40px;
     border-radius: 15px;
+    border-width: 5px;
     border-color: #098a26;
     blur-radius: 50px;
     margin-left: 20px;
