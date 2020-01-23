@@ -27,10 +27,6 @@ class DashDBmanager:
 
         if not existed:
 
-            # print(f'Database {db_path} is not empty.')
-
-        # else:
-
             print(f'Database {db_path} not found, creating new...')
 
             query = f'''
@@ -107,7 +103,6 @@ class DashDBmanager:
 
     def insert_row(self, row_list):
         query = f'INSERT INTO {self.table_name} ({self.columns}) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-        # print(row_list)
         self.connection.execute(query, row_list)
         self.connection.commit()
         print(f'Row inserted with id = {row_list[0]}')
@@ -118,9 +113,6 @@ class DashDBmanager:
 
         trace = json_data['trace']
         row_list = []
-
-        # ID - AUTOINCREMENT
-        # row_list.append(str(trace['id']))  # .zfill(14))
 
         # DATE
         dt = datetime.datetime.strptime(str(trace['id']), '%H%M%S%d%m%Y')
@@ -158,12 +150,14 @@ class DashDBmanager:
         ids = []
         times = []
         sensors = []
+        anomaly_value_indeces = list(range(5, 16, 2))
         qty = 0
         for row in cursor:
-            anomalies_on = ''
-            for index, sensor_id in zip(range(5, 16, 2), range(1, 7)):
+            anomalies_on = []
+            for index, sensor_id in zip(anomaly_value_indeces, range(1, 7)):
                 if row[index] == 1:
-                    anomalies_on += f"S{sensor_id}"
+                    anomalies_on.append(f'S{sensor_id}')
+            anomalies_on = ', '.join(anomalies_on)
             sensors.append(anomalies_on)
             times.append(row[1])
             ids.append(row[1])
@@ -172,7 +166,7 @@ class DashDBmanager:
 
         print(f'{qty} row(s) selected.\n')
         anomaly_descriptions = [
-            f"[{anomaly_sensors}]"
+            f"{anomaly_sensors}"
             for anomaly_time, anomaly_sensors
             in zip(times, sensors)
         ]
@@ -180,8 +174,7 @@ class DashDBmanager:
 
 
 
-    # TODO: fixed list size?
-    def select_area(self, czas, delta=5):
+    def select_area(self, czas, imie, delta=5):
 
         dt = datetime.datetime.strptime(czas, "%m-%d-%Y %H:%M:%S")
         left = dt - datetime.timedelta(seconds=delta) 
@@ -190,25 +183,29 @@ class DashDBmanager:
         dt = dt.strftime("%m-%d-%Y %H:%M:%S")
         left = left.strftime("%m-%d-%Y %H:%M:%S")
         right = right.strftime("%m-%d-%Y %H:%M:%S")
-
-        # print(type(czas), '\tczas\t', czas)
-        # print(type(dt), '\tdt\t', dt)
-        # print(type(left), '\tleft\t',left)
-        # print(type(right), '\tright\t',right) 
         
-        print(f'Selecting rows with date {dt} +- {delta} seconds...')
-        query = f"SELECT ID, {self.columns} FROM {self.table_name} WHERE DATE >= '{left}' AND DATE <= '{right}'"
+        print(f'Selecting rows of {imie} with date {dt} +- {delta} seconds...')
+        query = f"SELECT ID, {self.columns} FROM {self.table_name} WHERE USERNAME = '{imie}' AND DATE >= '{left}' AND DATE <= '{right}'"
         cursor = self.connection.execute(query)
 
-        i = 0
+        qty = 0
         rows = []
-        for row in cursor:
-            i += 1
-            rows.append(row)
+        for qty, row in enumerate(cursor, 1):
             print(row)
+            dt = datetime.datetime.strptime(row[1], "%m-%d-%Y %H:%M:%S")
+            l = []
+            l.append(dt)
+            l.append(row[4:])
+            rows.append(l)
+        
+        print(f'\n{qty} row(s) selected.')
 
-        print(f'{i} row(s) selected.')
-        return rows
+        series = [ [] for _ in range(6) ]
+        for row in sorted(rows, key=lambda x:x[0]):
+            for i, j in enumerate(range(0, 12, 2)):
+                series[i].append(row[1][j])
+
+        return series
 
 
 if __name__ == "__main__":
@@ -219,28 +216,27 @@ if __name__ == "__main__":
     # os.remove(db_path), print('\nDeleted db successfully.')
 
 
-    # Creation
     db = DashDBmanager(db_path)
 
-    json_data = {
-        'birthdate': '1982',
-        'disabled': False,
-        'firstname': 'Janek',
-        'id': 12,
-        'lastname': 'Grzegorczyk',
-        'trace': {
-            'id': 11110411111121,
-            'name': 'bach',
-            'sensors': [
-                {'anomaly': False, 'id': 0, 'value': 710},
-                {'anomaly': False, 'id': 1, 'value': 148},
-                {'anomaly': False, 'id': 2, 'value': 1023},
-                {'anomaly': True, 'id': 3, 'value': 1023},
-                {'anomaly': False, 'id': 4, 'value': 245},
-                {'anomaly': False, 'id': 5, 'value': 1023}
-            ]
-        }
-    }
+    # json_data = {
+    #     'birthdate': '1982',
+    #     'disabled': False,
+    #     'firstname': 'Janek',
+    #     'id': 12,
+    #     'lastname': 'Grzegorczyk',
+    #     'trace': {
+    #         'id': 11110411111121,
+    #         'name': 'bach',
+    #         'sensors': [
+    #             {'anomaly': False, 'id': 0, 'value': 710},
+    #             {'anomaly': False, 'id': 1, 'value': 148},
+    #             {'anomaly': True, 'id': 2, 'value': 1023},
+    #             {'anomaly': False, 'id': 3, 'value': 1023},
+    #             {'anomaly': True, 'id': 4, 'value': 245},
+    #             {'anomaly': False, 'id': 5, 'value': 1023}
+    #         ]
+    #     }
+    # }
 
 
 
@@ -249,15 +245,17 @@ if __name__ == "__main__":
         # url = f'http://127.0.0.1:5000/{pac}'
     #     for i in range(30):
     #         json_data = json.loads(requests.get(url).text)
-    #         row_list = DashDBmanager.parseJSON(json_data)
-    #         db.insert_row(row_list)
+    # row_list = DashDBmanager.parseJSON(json_data)
+    # db.insert_row(row_list)
 
 
     db.select_all()
 
+
+
     slownicks = db.list_anomalies('Bartosz Moskalski')
     print(slownicks, '\n')
-    # czas = db.select_row_with_anomaly('Bartosz Moskalski', '01-30-2010 04:36:54')
-    # print(czas)
-    lista_list = db.select_area(slownicks[-1]['date'], 3)
+    
+ 
+    lista_list = db.select_area(slownicks[-1]['date'], delta=5, imie='Bartosz Moskalski')
     print('\n', lista_list)
