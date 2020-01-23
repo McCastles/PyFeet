@@ -9,9 +9,20 @@ from dash.dependencies import Input, Output, State
 import json
 import requests
 import numpy as np
+import pandas as pd
 import base64
+import dash_table
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
+
+df = pd.DataFrame([{'a': 1, 'b': 2, 'c': 3} for i in range(100)])
+print(df.columns)
+
+columns=[{"name": i, "id": i} for i in df.columns]
+data=df.to_dict('rows')
+
+print(f"columns: {columns}")
+print(f'data: {data}')
 
 x_range = 600
 n_traces = 6
@@ -182,7 +193,17 @@ def main():
                     dcc.Graph(
                         id='feet',
                     ), width=3)
-            ])
+            ]),
+        dbc.Row([
+            dbc.Col(id='anomaly_display'),
+            dbc.Col(dash_table.DataTable(
+                id='frame',
+                columns=[{"name": i, "id": i} for i in df.columns],
+                data=df.to_dict('rows'),
+                style_table={'maxHeight': '300px','overflowY': 'scroll', 'color': 'black'}
+
+            ), width=3, className='table')
+        ])
 
     ], className='mainDiv')
 
@@ -261,6 +282,12 @@ def main():
     )
     def store_current_patient_id(data):
         return data
+
+    @app.callback(Output('anomaly_display', 'children'), [Input('frame', 'active_cell')])
+    def display_anomaly(row_dict):
+        if not row_dict:
+            row_dict = {'row': 'no row selected', 'column_id': 'no column id'}
+        return html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')
 
     app.run_server(debug=True)
 
