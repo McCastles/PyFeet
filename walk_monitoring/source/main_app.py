@@ -13,9 +13,9 @@ import base64
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 
-person_ids = [1, 2, 3, 4, 5, 6]
 x_range = 600
 n_traces = 6
+n_patients = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
@@ -27,7 +27,7 @@ db_path = '../../walktraceDB.db'
 db_managers = {}
 
 
-def prepare_array(series, value):
+def prepare_and_rotate_array(series, value):
     if len(series) < x_range:
         arr = np.zeros(x_range)
         np.put(arr, np.arange(len(series)), series)
@@ -57,8 +57,9 @@ def create_figure_for_trace(traces, current_range, title):
             'yaxis': {
                 'title': {'text': 'sensor value', 'fontsize': 20},
                 'gridcolor': '#808080',
-                'tick0': 0,
-                'dtick': 200
+                # 'tick0': 0,
+                # 'dtick': 200,
+                'type': "log"
             },
             'xaxis': {'color': 'white', 'tickmode': 'array', 'tickvals': np.arange(0, 600, 100),
                       'ticktext': np.arange(600, 0, -100)},
@@ -142,10 +143,10 @@ def build_data_storage_dict():
         'patient_id': 1,
         'uuid': None
     }
-
-    for i in range(n_traces):
-        store[f'trace{i}'] = []
-    print(store)
+    for p_id in range(n_patients):
+        store[f'patient{p_id + 1}'] = {}
+        for i in range(n_traces):
+            store[f'patient{p_id + 1}'][f'trace{i}'] = []
     return store
 
 
@@ -157,8 +158,8 @@ def main():
         dbc.Row([dbc.Col(children=[html.Button(f'patient id {i}', id=f'button{i}',
                                                className='patient-button') for i in range(1, 7)]),
                  dbc.Col(html.Div(id='content', children=''))])
-        , html.Button('stop data streaming', id='stop', className='stop-button'),
-        html.Button('start data streaming', id='start', className='start-button'),
+        , html.Button('||', id='stop', className='stop-button'),
+        html.Button(' > ', id='start', className='start-button'),
         html.Div(id='clock_div', children=dcc.Interval(id='clock', interval=tick_time)),
         dcc.Store('current_patient_id_input', data=build_data_storage_dict()),
         dcc.Store('current_patient_id_output', data=build_data_storage_dict()),
@@ -230,8 +231,6 @@ def main():
 
         if changed:
             data['patient_id'] = patient_id
-            for i in range(n_traces):
-                data[f'trace{i}'] = []
 
         # url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{patient_id}'
         url = f'http://127.0.0.1:5000/{patient_id}'
@@ -242,11 +241,12 @@ def main():
         db_manager.insert_row(row_list)
 
         for i in range(n_traces):
-            series = prepare_array(data[f'trace{i}'], sensors[i]['value'])
-            data[f'trace{i}'] = series
-        fig_left = create_figure_for_trace([data[f'trace{i}'] for i in left_trace_range], left_trace_range,
+            series = prepare_and_rotate_array(data[f'patient{patient_id}'][f'trace{i}'], sensors[i]['value'])
+            data[f'patient{patient_id}'][f'trace{i}'] = series
+        traces = data[f'patient{patient_id}']
+        fig_left = create_figure_for_trace([traces[f'trace{i}'] for i in left_trace_range], left_trace_range,
                                            'left foot sensors trace')
-        fig_right = create_figure_for_trace([data[f'trace{i}'] for i in right_trace_range], right_trace_range,
+        fig_right = create_figure_for_trace([traces[f'trace{i}'] for i in right_trace_range], right_trace_range,
                                             'right foot sensors trace')
         fig_feet = create_figure_for_feet(sensors)
 
