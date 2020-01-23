@@ -158,6 +158,7 @@ def build_data_storage_dict():
 
 
 def build_anomalies_frame(list_of_rows_dicts):
+    print(f'building frame.......')
     df = pd.DataFrame(list_of_rows_dicts)
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values('date', inplace=True)
@@ -270,8 +271,8 @@ def main():
 
         if changed:
             data['patient_id'] = patient_id
-
         if not data[f'patient{patient_id}']['anomalies_data']:
+            print(f'build anomalies! {patient_id}')
             data[f'patient{patient_id}']['anomalies_data'] = build_anomalies_frame(
                 db_manager.list_anomalies(f'{json_data["firstname"]} {json_data["lastname"]}'))
         # url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{patient_id}'
@@ -285,11 +286,6 @@ def main():
             series = prepare_and_rotate_array(patient_data[f'trace{i}'], sensors[i]['value'])
             data[f'patient{patient_id}'][f'trace{i}'] = series
 
-        s = np.array(data[f'patient{patient_id}']['trace0'])
-        s = s[s > 0]
-
-        print(s)
-        print(session_id)
         fig_left = create_figure_for_trace([patient_data[f'trace{i}'] for i in left_trace_range], left_trace_range,
                                            'left foot sensors trace')
         fig_right = create_figure_for_trace([patient_data[f'trace{i}'] for i in right_trace_range], right_trace_range,
