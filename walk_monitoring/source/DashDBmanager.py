@@ -26,13 +26,12 @@ class DashDBmanager:
         print(f'\nTrying to connect to {db_path}...')
 
         if not existed:
-
             print(f'Database {db_path} not found, creating new...')
 
             query = f'''
 
             CREATE TABLE {self.table_name} (
-            
+
             ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 
             DATE DATETIME NOT NULL,
@@ -68,7 +67,6 @@ class DashDBmanager:
             print('Database created successfully.\n')
         print('Connected.')
 
-
     # def select_row_with_anomaly(self, imie, czas):
     #     print(f'\nSelecting row with imie = {imie}, czas = {czas}')
     #     query = f'''
@@ -84,8 +82,6 @@ class DashDBmanager:
     #     print(f'{i} row selected.\n')
     #     return row[1]
 
-
-
     def select_all(self):
         print(f'\nSelecting all rows...')
 
@@ -100,13 +96,11 @@ class DashDBmanager:
             print(row)
         print(f'{qty} row(s) selected.')
 
-
     def insert_row(self, row_list):
         query = f'INSERT INTO {self.table_name} ({self.columns}) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         self.connection.execute(query, row_list)
         self.connection.commit()
         print(f'Row inserted with id = {row_list[0]}')
-
 
     @staticmethod
     def parseJSON(json_data):
@@ -128,7 +122,7 @@ class DashDBmanager:
         # S1_VALUE, S1_ANOMALY ... S6_VALUE, S6_ANOMALY
         for sensor in trace['sensors']:
             row_list.append(sensor['value'])
-            row_list.append( bool(sensor['anomaly']))
+            row_list.append(bool(sensor['anomaly']))
 
         # IS_ANOMALY
         is_anomaly = any([sensor['anomaly'] for sensor in trace['sensors']])
@@ -136,10 +130,8 @@ class DashDBmanager:
 
         return row_list
 
-
-
     def list_anomalies(self, imie):
-        
+
         print(f'\nSelecting all rows of {imie} with anomalies...')
         query = f'''
         SELECT * 
@@ -170,20 +162,18 @@ class DashDBmanager:
             for anomaly_time, anomaly_sensors
             in zip(times, sensors)
         ]
-        return [ {'sensors': an_desc, 'date': an_id} for an_id, an_desc in zip(ids, anomaly_descriptions)]
-
-
+        return [{'sensors': an_desc, 'date': an_id} for an_id, an_desc in zip(ids, anomaly_descriptions)]
 
     def select_area(self, czas, imie, delta=5):
 
         dt = datetime.datetime.strptime(czas, "%m-%d-%Y %H:%M:%S")
-        left = dt - datetime.timedelta(seconds=delta) 
-        right = dt + datetime.timedelta(seconds=delta) 
+        left = dt - datetime.timedelta(seconds=delta)
+        right = dt + datetime.timedelta(seconds=delta)
 
         dt = dt.strftime("%m-%d-%Y %H:%M:%S")
         left = left.strftime("%m-%d-%Y %H:%M:%S")
         right = right.strftime("%m-%d-%Y %H:%M:%S")
-        
+
         print(f'Selecting rows of {imie} with date {dt} +- {delta} seconds...')
         query = f"SELECT ID, {self.columns} FROM {self.table_name} WHERE USERNAME = '{imie}' AND DATE >= '{left}' AND DATE <= '{right}'"
         cursor = self.connection.execute(query)
@@ -197,11 +187,11 @@ class DashDBmanager:
             l.append(dt)
             l.append(row[4:])
             rows.append(l)
-        
+
         print(f'\n{qty} row(s) selected.')
 
-        series = [ [] for _ in range(6) ]
-        for row in sorted(rows, key=lambda x:x[0]):
+        series = [[] for _ in range(6)]
+        for row in sorted(rows, key=lambda x: x[0]):
             for i, j in enumerate(range(0, 12, 2)):
                 series[i].append(row[1][j])
 
@@ -214,7 +204,6 @@ if __name__ == "__main__":
 
     # Deleting old database
     # os.remove(db_path), print('\nDeleted db successfully.')
-
 
     db = DashDBmanager(db_path)
 
@@ -238,24 +227,18 @@ if __name__ == "__main__":
     #     }
     # }
 
-
-
     # JSON parsing
     # for pac in range(1, 7):
-        # url = f'http://127.0.0.1:5000/{pac}'
+    # url = f'http://127.0.0.1:5000/{pac}'
     #     for i in range(30):
     #         json_data = json.loads(requests.get(url).text)
     # row_list = DashDBmanager.parseJSON(json_data)
     # db.insert_row(row_list)
 
-
     db.select_all()
-
-
 
     slownicks = db.list_anomalies('Bartosz Moskalski')
     print(slownicks, '\n')
-    
- 
+
     lista_list = db.select_area(slownicks[-1]['date'], delta=5, imie='Bartosz Moskalski')
     print('\n', lista_list)

@@ -15,14 +15,7 @@ import dash_table
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 
-df = pd.DataFrame([{'a': 1, 'b': 2, 'c': 3} for i in range(100)])
-print(df.columns)
-
-columns=[{"name": i, "id": i} for i in df.columns]
-data=df.to_dict('rows')
-
-print(f"columns: {columns}")
-print(f'data: {data}')
+columns = [{"name": i, "id": i} for i in ['index', 'date', 'sensors']]
 
 x_range = 600
 n_traces = 6
@@ -30,8 +23,10 @@ n_patients = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
-tick_time = 500
+tick_time = 2000
 pause_time = 60 * 60 * 1000
+
+colsize = 50
 
 db_path = '../../walktraceDB.db'
 
@@ -68,9 +63,9 @@ def create_figure_for_trace(traces, current_range, title):
             'yaxis': {
                 'title': {'text': 'sensor value', 'fontsize': 20},
                 'gridcolor': '#808080',
-                # 'tick0': 0,
-                # 'dtick': 200,
-                'type': "log"
+                'tick0': 0,
+                'dtick': 200,
+                # 'type': "log"
             },
             'xaxis': {'color': 'white', 'tickmode': 'array', 'tickvals': np.arange(0, 600, 100),
                       'ticktext': np.arange(600, 0, -100)},
@@ -152,19 +147,33 @@ def create_figure_for_feet(sensors_data):
 def build_data_storage_dict():
     store = {
         'patient_id': 1,
-        'uuid': None
+        'selected_anomaly_row': None
     }
-    for p_id in range(n_patients):
-        store[f'patient{p_id + 1}'] = {}
+    for p_id in range(1, n_patients + 1):
+        store[f'patient{p_id}'] = {}
+        store[f'patient{p_id}']['anomalies_data'] = []
         for i in range(n_traces):
-            store[f'patient{p_id + 1}'][f'trace{i}'] = []
+            store[f'patient{p_id}'][f'trace{i}'] = []
     return store
 
 
-def main():
-    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+def build_anomalies_frame(list_of_rows_dicts):
+    print(f'building frame.......')
+    df = pd.DataFrame(list_of_rows_dicts)
+    df['date'] = pd.to_datetime(df['date'])
+    df.sort_values('date', inplace=True)
+    df = df.reset_index(drop=True)
+    df['index'] = df.index
+    return df.to_dict('rows')
 
-    app.layout = html.Div(children=[
+
+def serve_layout():
+    session_id = str(uuid.uuid4())
+    while session_id in db_managers:
+        session_id = str(uuid.uuid4())
+    db_managers[session_id] = DashDBmanager(db_path)
+    return html.Div(children=[
+        html.Div(session_id, id='session-id', style={'display': 'none'}),
         html.H1(id='header', children='walk monitoring'),
         dbc.Row([dbc.Col(children=[html.Button(f'patient id {i}', id=f'button{i}',
                                                className='patient-button') for i in range(1, 7)]),
@@ -172,8 +181,8 @@ def main():
         , html.Button('||', id='stop', className='stop-button'),
         html.Button(' > ', id='start', className='start-button'),
         html.Div(id='clock_div', children=dcc.Interval(id='clock', interval=tick_time)),
-        dcc.Store('current_patient_id_input', data=build_data_storage_dict()),
-        dcc.Store('current_patient_id_output', data=build_data_storage_dict()),
+        dcc.Store('current_user_cache_input', data=build_data_storage_dict()),
+        dcc.Store('current_user_cache_output', data=build_data_storage_dict()),
         dbc.Row(
             [
                 dbc.Col(
@@ -198,14 +207,26 @@ def main():
             dbc.Col(id='anomaly_display'),
             dbc.Col(dash_table.DataTable(
                 id='frame',
-                columns=[{"name": i, "id": i} for i in df.columns],
-                data=df.to_dict('rows'),
-                style_table={'maxHeight': '300px','overflowY': 'scroll', 'color': 'black'}
+                columns=columns,
+                data=[{}],
+                style_table={'maxHeight': '300px', 'overflowY': 'scroll', 'color': 'black'},
+                style_cell={
+                    # all three widths are needed
+                    'minWidth': f'{colsize}px', 'width': f'{colsize}px', 'maxWidth': f'{colsize}px',
+                    'overflow': 'hidden',
+                    'textOverflow': 'ellipsis',
+                }
 
             ), width=3, className='table')
         ])
 
     ], className='mainDiv')
+
+
+def main():
+    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+    app.layout = serve_layout()
 
     @app.callback(
         [Output('clock_div', 'children')],
@@ -223,73 +244,87 @@ def main():
 
     @app.callback(
         [Output('content', 'children'),
-         Output('current_patient_id_output', 'data'),
+         Output('current_user_cache_output', 'data'),
          Output('trace_left', 'figure'),
          Output('trace_right', 'figure'),
-         Output('feet', 'figure')],
+         Output('feet', 'figure'),
+         Output('frame', 'data')],
         [Input('clock', 'n_intervals'),
          *[Input(f'button{i}', 'n_clicks_timestamp') for i in range(1, 7)],
+         Input('session-id', 'children')
          ],
-        [State('current_patient_id_input', 'data')]
+        [State('current_user_cache_input', 'data')]
 
     )
-    def tick(_, t1, t2, t3, t4, t5, t6, data):
-        if not data['uuid']:
-            uid = str(uuid.uuid4())
-            while uid in db_managers:
-                uid = str(uuid.uuid4())
-            data['uuid'] = uid
-            db_managers[uid] = DashDBmanager(db_path)
-        db_manager = db_managers[data['uuid']]
+    def tick(_, t1, t2, t3, t4, t5, t6, session_id, data):
+        db_manager = db_managers[session_id]
 
         buttons_times = [t1, t2, t3, t4, t5, t6]
         for i, time in enumerate(buttons_times):
             buttons_times[i] = 0 if time is None else time
         max_val = max(buttons_times)
         patient_id = buttons_times.index(max_val) + 1
+        url = f'http://127.0.0.1:5000/{patient_id}'
+        json_data = json.loads(requests.get(url).text)
 
         changed = patient_id != data['patient_id']
 
         if changed:
             data['patient_id'] = patient_id
-
+        if not data[f'patient{patient_id}']['anomalies_data']:
+            print(f'build anomalies! {patient_id}')
+            data[f'patient{patient_id}']['anomalies_data'] = build_anomalies_frame(
+                db_manager.list_anomalies(f'{json_data["firstname"]} {json_data["lastname"]}'))
         # url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{patient_id}'
-        url = f'http://127.0.0.1:5000/{patient_id}'
-        json_data = json.loads(requests.get(url).text)
         sensors = json_data['trace']['sensors']
 
         row_list = db_manager.parseJSON(json_data)
         db_manager.insert_row(row_list)
 
+        patient_data = data[f'patient{patient_id}']
         for i in range(n_traces):
-            series = prepare_and_rotate_array(data[f'patient{patient_id}'][f'trace{i}'], sensors[i]['value'])
+            series = prepare_and_rotate_array(patient_data[f'trace{i}'], sensors[i]['value'])
             data[f'patient{patient_id}'][f'trace{i}'] = series
-        traces = data[f'patient{patient_id}']
-        fig_left = create_figure_for_trace([traces[f'trace{i}'] for i in left_trace_range], left_trace_range,
+
+        fig_left = create_figure_for_trace([patient_data[f'trace{i}'] for i in left_trace_range], left_trace_range,
                                            'left foot sensors trace')
-        fig_right = create_figure_for_trace([traces[f'trace{i}'] for i in right_trace_range], right_trace_range,
+        fig_right = create_figure_for_trace([patient_data[f'trace{i}'] for i in right_trace_range], right_trace_range,
                                             'right foot sensors trace')
         fig_feet = create_figure_for_feet(sensors)
 
         return html.Div([
             html.H2(f'patient name: {json_data["firstname"]} {json_data["lastname"]}',
                     style={'font-family': "Courier New, monospace"}),
-        ], className='patientName'), data, fig_left, fig_right, fig_feet
+        ], className='patientName'), data, fig_left, fig_right, fig_feet, data[f'patient{patient_id}']['anomalies_data']
+
+    @app.callback([Output('anomaly_display', 'children')],# , Output('current_user_cache_input', 'data')],
+                  [Input('frame', 'active_cell')], [State('frame', 'data'), State('current_user_cache_output', 'data'), State('session-id', 'children')])
+    def display_anomaly(row_dict, list_of_row_dicts, data_store, session_id):
+        if not row_dict:
+            return [html.H3(children='no anomaly selected')]
+        row_id = row_dict['row']
+        if data_store['selected_anomaly_row'] != row_id:
+            data_store['selected_anomaly_row'] = row_id
+            date = list_of_row_dicts[int(row_id)]['date']
+            anomaly_trace_data = db_managers[session_id].select_area(date, 300)
+            print(anomaly_trace_data)
+        print('##############################')
+
+        return [html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')]#, data_store
+
 
     @app.callback(
-        Output('current_patient_id_input', 'data'),
-        [Input('current_patient_id_output', 'data')]
+        Output('current_user_cache_input', 'data'),
+        [Input('current_user_cache_output', 'data')]
     )
     def store_current_patient_id(data):
         return data
 
-    @app.callback(Output('anomaly_display', 'children'), [Input('frame', 'active_cell')])
-    def display_anomaly(row_dict):
-        if not row_dict:
-            row_dict = {'row': 'no row selected', 'column_id': 'no column id'}
-        return html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')
-
     app.run_server(debug=True)
+
+
+def create_time_series_from_db_data(list_of_rows):
+    pass
 
 
 if __name__ == '__main__':
