@@ -16,6 +16,8 @@ import dash_table
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 
 columns = [{"name": i, "id": i} for i in ['index', 'date', 'sensors']]
+patient_names = {1: 'Janek Grzegorczyk', 2: 'Elżbieta Kochalska', 3: 'Albert Lisowski', 4: 'Ewelina Nosowska',
+                 5: 'Piotr Fokalski', 6: 'Bartosz Moskalski'}
 
 x_range = 600
 n_traces = 6
@@ -23,10 +25,10 @@ n_patients = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
-tick_time = 2000
+tick_time = 1000
 pause_time = 60 * 60 * 1000
 
-colsize = 50
+colsize = 5
 
 db_path = '../../walktraceDB.db'
 
@@ -46,35 +48,37 @@ def prepare_and_rotate_array(series, value):
 
 def create_figure_for_trace(traces, current_range, title):
     xticks = np.arange(x_range)
-    return {
-        'data': [{
-            'x': xticks,
-            'y': series,
-            'name': f'sensor{list(current_range)[i] + 1}',
-            'text': f'sensor{list(current_range)[i] + 1}',
-        } for i, series in enumerate(traces)],
-        'layout': {
-            'title': {'text': title,
-                      'font': dict(
-                          size=30,
-                      ),
-                      },
+    return dcc.Graph(
+        figure={
+            'data': [{
+                'x': xticks,
+                'y': series,
+                'name': f'sensor{list(current_range)[i] + 1}',
+                'text': f'sensor{list(current_range)[i] + 1}',
+            } for i, series in enumerate(traces)],
+            'layout': {
+                'title': {'text': title,
+                          'font': dict(
+                              size=30,
+                          ),
+                          },
 
-            'yaxis': {
-                'title': {'text': 'sensor value', 'fontsize': 20},
-                'gridcolor': '#808080',
-                'tick0': 0,
-                'dtick': 200,
-                # 'type': "log"
-            },
-            'xaxis': {'color': 'white', 'tickmode': 'array', 'tickvals': np.arange(0, 600, 100),
-                      'ticktext': np.arange(600, 0, -100)},
-            'height': 300,
-            'plot_bgcolor': 'black',
-            'paper_bgcolor': 'black',
-            'font': {'family': 'Courier New, monospace', 'color': 'white', 'size': 15}
+                'yaxis': {
+                    'title': {'text': 'sensor value', 'fontsize': 20},
+                    'gridcolor': '#808080',
+                    'tick0': 0,
+                    'dtick': 200,
+                    # 'type': "log"
+                },
+                'xaxis': {'color': 'white', 'tickmode': 'array', 'tickvals': np.arange(0, 600, 100),
+                          'ticktext': np.arange(600, 0, -100)},
+                'height': 300,
+                'plot_bgcolor': 'black',
+                'paper_bgcolor': 'black',
+                'font': {'family': 'Courier New, monospace', 'color': 'white', 'size': 15}
+            }
         }
-    }
+    )
 
 
 def get_color(value, anomaly):
@@ -158,7 +162,6 @@ def build_data_storage_dict():
 
 
 def build_anomalies_frame(list_of_rows_dicts):
-    print(f'building frame.......')
     df = pd.DataFrame(list_of_rows_dicts)
     df['date'] = pd.to_datetime(df['date'])
     df.sort_values('date', inplace=True)
@@ -186,33 +189,22 @@ def serve_layout():
         dbc.Row(
             [
                 dbc.Col(
-                    [dcc.Graph(
-                        id='trace_left',
-                        figure=create_figure_for_trace([], left_trace_range,
-                                                       'Left foot sensors trace')
-
-                    ),
-                        dcc.Graph(
-                            id='trace_right',
-                            figure=create_figure_for_trace([], right_trace_range,
-                                                           'Right foot sensors trace')
-                        )
-                    ], width=9),
+                    [html.Div(id='trace_left'), html.Div(id='trace_right'),
+                     ], width=9),
                 dbc.Col(
                     dcc.Graph(
                         id='feet',
                     ), width=3)
             ]),
         dbc.Row([
-            dbc.Col(id='anomaly_display'),
+            dbc.Col([html.Div(id='anomaly_display_left'), html.Div(id='anomaly_display_right')]),
             dbc.Col(dash_table.DataTable(
                 id='frame',
                 columns=columns,
                 data=[{}],
-                style_table={'maxHeight': '300px', 'overflowY': 'scroll', 'color': 'black'},
+                style_table={'maxHeight': '300px', 'overflowY': 'scroll', 'color': 'black', 'whiteSpace': 'normal'},
                 style_cell={
-                    # all three widths are needed
-                    'minWidth': f'{colsize}px', 'width': f'{colsize}px', 'maxWidth': f'{colsize}px',
+                    'minWidth': f'{20}px', 'maxWidth': f'{80}px',
                     'overflow': 'hidden',
                     'textOverflow': 'ellipsis',
                 }
@@ -245,8 +237,8 @@ def main():
     @app.callback(
         [Output('content', 'children'),
          Output('current_user_cache_output', 'data'),
-         Output('trace_left', 'figure'),
-         Output('trace_right', 'figure'),
+         Output('trace_left', 'children'),
+         Output('trace_right', 'children'),
          Output('feet', 'figure'),
          Output('frame', 'data')],
         [Input('clock', 'n_intervals'),
@@ -272,7 +264,6 @@ def main():
         if changed:
             data['patient_id'] = patient_id
         if not data[f'patient{patient_id}']['anomalies_data']:
-            print(f'build anomalies! {patient_id}')
             data[f'patient{patient_id}']['anomalies_data'] = build_anomalies_frame(
                 db_manager.list_anomalies(f'{json_data["firstname"]} {json_data["lastname"]}'))
         # url = f'http://tesla.iem.pw.edu.pl:9080/v2/monitor/{patient_id}'
@@ -297,21 +288,22 @@ def main():
                     style={'font-family': "Courier New, monospace"}),
         ], className='patientName'), data, fig_left, fig_right, fig_feet, data[f'patient{patient_id}']['anomalies_data']
 
-    @app.callback([Output('anomaly_display', 'children')],# , Output('current_user_cache_input', 'data')],
-                  [Input('frame', 'active_cell')], [State('frame', 'data'), State('current_user_cache_output', 'data'), State('session-id', 'children')])
+    @app.callback([Output('anomaly_display_left', 'children'), Output('anomaly_display_right', 'children')],
+                  [Input('frame', 'active_cell')],
+                  [State('frame', 'data'), State('current_user_cache_output', 'data'), State('session-id', 'children')])
     def display_anomaly(row_dict, list_of_row_dicts, data_store, session_id):
         if not row_dict:
-            return [html.H3(children='no anomaly selected')]
+            return [html.H3(children='no anomaly selected'), '']
         row_id = row_dict['row']
         if data_store['selected_anomaly_row'] != row_id:
             data_store['selected_anomaly_row'] = row_id
             date = list_of_row_dicts[int(row_id)]['date']
-            anomaly_trace_data = db_managers[session_id].select_area(date, 300)
-            print(anomaly_trace_data)
-        print('##############################')
-
-        return [html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')]#, data_store
-
+            anomaly_trace_data = db_managers[session_id].select_area(date, patient_names[data_store['patient_id']], 30)
+        anomaly_fig_l = create_figure_for_trace([anomaly_trace_data[i] for i in left_trace_range], left_trace_range,
+                                                'left anomaly')
+        anomaly_fig_r = create_figure_for_trace([anomaly_trace_data[i] for i in right_trace_range], right_trace_range,
+                                                'right anomaly')
+        return [anomaly_fig_l, anomaly_fig_r]
 
     @app.callback(
         Output('current_user_cache_input', 'data'),
@@ -322,9 +314,6 @@ def main():
 
     app.run_server(debug=True)
 
-
-def create_time_series_from_db_data(list_of_rows):
-    pass
 
 
 if __name__ == '__main__':
