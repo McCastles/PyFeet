@@ -23,7 +23,7 @@ n_patients = 6
 left_trace_range = range(3)
 right_trace_range = range(3, 6)
 feet_img = base64.b64encode(open('feet.png', 'rb').read())
-tick_time = 500
+tick_time = 2000
 pause_time = 60 * 60 * 1000
 
 colsize = 50
@@ -301,15 +301,16 @@ def main():
                   [Input('frame', 'active_cell')], [State('frame', 'data'), State('current_user_cache_output', 'data'), State('session-id', 'children')])
     def display_anomaly(row_dict, list_of_row_dicts, data_store, session_id):
         if not row_dict:
-            return html.H3(children='no anomaly selected'), data_store
+            return [html.H3(children='no anomaly selected')]
         row_id = row_dict['row']
         if data_store['selected_anomaly_row'] != row_id:
             data_store['selected_anomaly_row'] = row_id
             date = list_of_row_dicts[int(row_id)]['date']
             anomaly_trace_data = db_managers[session_id].select_area(date, 300)
+            print(anomaly_trace_data)
         print('##############################')
 
-        return html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')#, data_store
+        return [html.Div(children=f'row: {row_dict["row"]}, columns: {row_dict["column_id"]}')]#, data_store
 
 
     @app.callback(
