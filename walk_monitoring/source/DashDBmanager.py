@@ -23,10 +23,10 @@ class DashDBmanager:
         existed = os.path.isfile(db_path)
 
         self.connection = sqlite3.connect(db_path, check_same_thread=False)
-        print(f'\nTrying to connect to {db_path}...')
+        #print(f'\nTrying to connect to {db_path}...')
 
         if not existed:
-            print(f'Database {db_path} not found, creating new...')
+            #print(f'Database {db_path} not found, creating new...')
 
             query = f'''
 
@@ -64,11 +64,11 @@ class DashDBmanager:
             '''
 
             self.connection.execute(query)
-            print('Database created successfully.\n')
-        print('Connected.')
+            #print('Database created successfully.\n')
+        #print('Connected.')
 
     # def select_row_with_anomaly(self, imie, czas):
-    #     print(f'\nSelecting row with imie = {imie}, czas = {czas}')
+    #     #print(f'\nSelecting row with imie = {imie}, czas = {czas}')
     #     query = f'''
     #     SELECT *
     #     FROM {self.table_name}
@@ -78,12 +78,12 @@ class DashDBmanager:
     #     i = 0
     #     for row in cursor:
     #         i += 1
-    #         print(row)
-    #     print(f'{i} row selected.\n')
+    #         #print(row)
+    #     #print(f'{i} row selected.\n')
     #     return row[1]
 
     def select_all(self):
-        print(f'\nSelecting all rows...')
+        #print(f'\nSelecting all rows...')
 
         cursor = self.connection.execute(f'''
         SELECT * 
@@ -93,14 +93,14 @@ class DashDBmanager:
         qty = 0
         for row in cursor:
             qty += 1
-            print(row)
-        print(f'{qty} row(s) selected.')
+            #print(row)
+        #print(f'{qty} row(s) selected.')
 
     def insert_row(self, row_list):
         query = f'INSERT INTO {self.table_name} ({self.columns}) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         self.connection.execute(query, row_list)
         self.connection.commit()
-        print(f'Row inserted with id = {row_list[0]}')
+        #print(f'Row inserted with id = {row_list[0]}')
 
     @staticmethod
     def parseJSON(json_data):
@@ -132,7 +132,7 @@ class DashDBmanager:
 
     def list_anomalies(self, imie):
 
-        print(f'\nSelecting all rows of {imie} with anomalies...')
+        #print(f'\nSelecting all rows of {imie} with anomalies...')
         query = f'''
         SELECT * 
         FROM {self.table_name}
@@ -153,10 +153,10 @@ class DashDBmanager:
             sensors.append(anomalies_on)
             times.append(row[1])
             ids.append(row[1])
-            print(row)
+            #print(row)
             qty += 1
 
-        print(f'{qty} row(s) selected.\n')
+        #print(f'{qty} row(s) selected.\n')
         anomaly_descriptions = [
             f"{anomaly_sensors}"
             for anomaly_time, anomaly_sensors
@@ -166,7 +166,7 @@ class DashDBmanager:
 
     def select_area(self, czas, imie, delta=5):
 
-        dt = datetime.datetime.strptime(czas, "%m-%d-%Y %H:%M:%S")
+        dt = datetime.datetime.strptime(czas, "%Y-%m-%dT%H:%M:%S")
         left = dt - datetime.timedelta(seconds=delta)
         right = dt + datetime.timedelta(seconds=delta)
 
@@ -174,21 +174,21 @@ class DashDBmanager:
         left = left.strftime("%m-%d-%Y %H:%M:%S")
         right = right.strftime("%m-%d-%Y %H:%M:%S")
 
-        print(f'Selecting rows of {imie} with date {dt} +- {delta} seconds...')
+        #print(f'Selecting rows of {imie} with date {dt} +- {delta} seconds...')
         query = f"SELECT ID, {self.columns} FROM {self.table_name} WHERE USERNAME = '{imie}' AND DATE >= '{left}' AND DATE <= '{right}'"
         cursor = self.connection.execute(query)
 
         qty = 0
         rows = []
         for qty, row in enumerate(cursor, 1):
-            print(row)
+            #print(row)
             dt = datetime.datetime.strptime(row[1], "%m-%d-%Y %H:%M:%S")
             l = []
             l.append(dt)
             l.append(row[4:])
             rows.append(l)
 
-        print(f'\n{qty} row(s) selected.')
+        #print(f'\n{qty} row(s) selected.')
 
         series = [[] for _ in range(6)]
         for row in sorted(rows, key=lambda x: x[0]):
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     db_path = '../../walktraceDB.db'
 
     # Deleting old database
-    # os.remove(db_path), print('\nDeleted db successfully.')
+    # os.remove(db_path), #print('\nDeleted db successfully.')
 
     db = DashDBmanager(db_path)
 
@@ -238,7 +238,7 @@ if __name__ == "__main__":
     db.select_all()
 
     slownicks = db.list_anomalies('Bartosz Moskalski')
-    print(slownicks, '\n')
+    #print(slownicks, '\n')
 
     lista_list = db.select_area(slownicks[-1]['date'], delta=5, imie='Bartosz Moskalski')
-    print('\n', lista_list)
+    #print('\n', lista_list)
