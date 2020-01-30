@@ -48,7 +48,11 @@ def prepare_and_rotate_array(series, value):
 
 def create_figure_for_trace(traces, current_range, title):
     xticks = np.arange(x_range)
+    # x = np.arange(10)
     return dcc.Graph(
+
+        # data=go.Scatter(x=x, y=x**2),
+
         figure={
             'data': [{
                 'x': xticks,
@@ -273,6 +277,7 @@ def main():
         db_manager.insert_row(row_list)
 
         patient_data = data[f'patient{patient_id}']
+    
         for i in range(n_traces):
             series = prepare_and_rotate_array(patient_data[f'trace{i}'], sensors[i]['value'])
             data[f'patient{patient_id}'][f'trace{i}'] = series
